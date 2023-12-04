@@ -1,1 +1,57 @@
+import socket, threading 
+import time 
 
+beverage_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#  beverage_client 소캣 생성 ->  IPV 주소 체계 : socket.AF_INET & TCP 프로토콜 : socket.SOCK_STREAM  
+beverage_client.connect(("127.0.0.1", 12345))
+# 127.0.0.1 주로 test용 서버 IP 주소, 포트번호 12345
+
+name = 'beverage' # 변수 name에 beverage 문자열 할당
+
+def make_coffee(order_info, ea, order_num): # make_coffee라는 함수 정의
+    _, p_name, _, p_time = order_info
+    # order_info = ( , , , ) 튜플 형식 / order_list의 튜플 데이터를 활용
+    # 이중에서 [0],[2] 값은 무시하고 [1],[3] 값만 저장하겠다는 의미
+    # 튜플 예시 : t2 = (1,) , t4 = 1, 2, 3 이런식으로도 쓸 수 있음 t2처럼 1개만 할때는 무조건, 넣어야함
+
+    for i in range(ea): 
+        # ea에 저장된 값만큼 반복
+        time.sleep(int(p_time)//1000)
+        # p_time을 정수로 변환하고 1000으로 나눈 값 만큼 대기
+        print(f'{order_num}번 주문 {p_name} {i+1}개 완성')
+        # f-string를 활용한 문구 출력
+    
+
+def receive():
+    # receive 함수 새롭게 정의
+    while True: #무한 반복
+        message = beverage_client.recv(1024).decode('utf-8')
+        # 앞서 정의한 소켓이 beverage_clinet인데 이걸 통해 최대 1024바이트의 데이터를 받아옴
+        # 받아온 데이터를 UTF-8 형식으로 디코딩하여 문자열로 변환
+        if message == 'NAME':
+            # 서버에서 전송한 메시지가 문자열 NAME인지 확인 후 맞다면 클라이언트 이름을 서버로 보냄
+            
+            beverage_client.send(name.encode('utf-8'))
+            # 이때 클라이언트 이름은 name = 'beverage'를 통해 beverage로 설정됨 
+            # 즉 서버에서 보낸 메시지가 NAME 이라면 클라이언트는 서버에게 beverage를 보냄
+        else:
+            # 서버에서 보낸 메시지가 NAME이 아니라면
+            print(message)
+            # 메시지 출력 및 디버깅용 (디버깅 : 소스 코드 오류, 버그를 찾기위해 실행하고 수정하는 과정)
+            message = eval(message)
+            # 문자열 형태 메시지를 eval 함수를 써서 파이썬 객체로 변환 (주고받는 데이터 종류가 문자열 형태의 파이썬 객체일 경우 주로 사용)
+            order_info, ea, order_num = message
+            # 파이썬 객체로 변환된 문자에서 주문 정보, 수량, 번호 추출
+            make_coffee(order_info, ea, order_num)
+            # 추출한 데이터로 함수 호출
+            beverage_client.send(str(order_num).encode('utf-8'))
+            # 주문 번호를 문자열로 변환 후, UTF-8 형식으로 인코딩 후 전송
+
+receive_thread = threading.Thread(target=receive)
+# receive 함수를 계속 실행할 수 있게 쓰레드 생성 및 시작 (백그라운드에서 눈에 안보여도 계속 실행 중)
+# 여기서 target은 쓰레드 실행 대상이 뭔지를 나타내는 의미
+receive_thread.start()
+
+# 앞서 리시브 함수는 무한 루프로 작동 중
+# 이렇게 해여 다른 코드를 실행하면서 쓰레드를 통해 병렬로 작업가능
+# 즉 백그라운드에서는 각각의 코드가 계속 실행되고 있는 중
