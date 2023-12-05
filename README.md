@@ -6,31 +6,42 @@
 <img width="518" alt="image" src="https://github.com/lee1234435/Transport/assets/133578714/9159de6b-f053-421c-9eb0-839ef5cd31d7">
 
 - 양방향 통신을 의미한다.
+- 
 - 클라이언트와 서버 2개로 나뉘게 된다.
 
 <img width="414" alt="image" src="https://github.com/lee1234435/Transport/assets/133578714/ac409452-7ad1-4996-8bbd-59029c9ffc8d">
 
 ▸ 양방향 통신 (3 way handshake)
-▸TCP를 사용하므로 연결 지향형
+
+▸ TCP를 사용하므로 연결 지향형
+
 ▸ 신뢰성 높은 데이터 전송을 보장
+
 ▸ 데이터 전송 순서를 보장
+
 ▸ UDP보다 느린 속도
 
 <img width="405" alt="image" src="https://github.com/lee1234435/Transport/assets/133578714/605cdaf7-aeca-413e-8971-02dbed6ef53f">
 
 
 ▸ 단방향 통신
+
 ▸ UDP를 사용하므로 비연결 지향형
+
 ▸ 신뢰성이 낮은 데이터 전송
+
 ▸ 데이터 전송 순서가 보장 X
+
 ▸ 재전송을 하지 않음
+
 ▸ TCP보다 빠른 속도
+
 
 TCP/IP Socket Communication Order
 ➪ 클라이언트(Client)  소켓 통신 과정
 [1. 소켓 생성]
 socket()을 통해 클라이언트 소켓을 생성
- 
+
 [2. 소켓 연결]
 connect()를 통해 IP주소와 Port Number로 식별되는 서버에 연결 요청
 3 way handshake 방식을 사용해 연결
