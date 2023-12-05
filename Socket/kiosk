@@ -1,0 +1,231 @@
+from PySide6.QtWidgets import QApplication, QMainWindow 
+from ui.kiosk import Ui_MainWindow
+import socket, threading
+import sys
+
+# Qt designer 실행준비 
+# 파이썬 인터프리터를 실행하기 위한 sys 모듈 호출
+
+class MyMainWindow(QMainWindow):
+# MyMainWindow 클래스에서 QMainWindow를 상속 받음 그리고 클래스 정의
+# pyQt 라이브러리를 이용해 GUI 어플리케이션 만들때 사용
+    def __init__(self):
+    # MyMainWindow 클래스 인스턴스 초기화 하기 위해 함수를 새롭게 만듬
+    
+        super().__init__()
+        # 초기화 하는 이유 : 클래스 상속 시 초기화 매서드를 명시적으로 호출하는 일반적인 방법
+        # 기존의 QMainWindow의 인스턴스를 초기화한 다음
+        # 내가 만든 인스턴스 (간단히 말하면 아래 코드들)을 사용
+        self.ui = Ui_MainWindow()
+        # ui_mainwindow의 인스턴스 중 ui 속성을 초기화
+        self.ui.setupUi(self)
+        # 초기화된 ui 인터페이스를 메인 창에 설정
+        self.ui.ame_spin_box.valueChanged.connect(self.update_total_price)
+        self.ui.latte_spin_box.valueChanged.connect(self.update_total_price)
+        self.ui.sault_spin_box.valueChanged.connect(self.update_total_price)
+        self.ui.bread_spin_box.valueChanged.connect(self.update_total_price)
+        self.ui.orange_spin_box.valueChanged.connect(self.update_total_price)
+        self.ui.apple_spin_box.valueChanged.connect(self.update_total_price)
+
+        self.ui.total_button.clicked.connect(self.on_button_clicked)
+        # 각각의 스핀 박스의 ValueChanged 신호를 update_total_price 메서드에 연결
+        # 스핀 박스 값이 변경 될 때 마다 update_total_price 메서드가 호출되도록 함
+        
+        # 통신 관련 코드
+        self.kiosk_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.kiosk_client.connect(("127.0.0.1", 12345))  # 서버 IP 주소와 포트 번호를 지정
+        # kiosk_client 소켓 생성 -> 소켓 통신 IPv4 통신 : socket.AF_INET , protocol : socket.SOCK_STREAM
+
+        # 분류, 제품명, 가격, 제조시간(ms)
+        self.order_list = [
+            ('coffee', 'americano', '5000', '3000'),
+            ('coffee', 'latte', '7000', '5000'),
+            ('bread', 'salut', '2500', '7000'),
+            ('bread', 'bread', '4000', '10000'),
+            ('beverage', 'orange juice', '4500', '3000'),
+            ('beverage', 'apple juice', '3000', '2000')
+        ]
+        # order_list라는 리스트를 정의 -> 리스트안에 튜플을 넣음
+        # 튜플 형식에는 카테고리, 메뉴, 가격, 제조시간을 넣음
+        # 여기서 self 의미 -> 파이썬에서 인스턴스 매서드 내에 현재 인스턴스를 나타내는 키워드
+        # self를 쓰면 인스턴스 변수에 접근하거나 다른 인스턴스 메서드를 호출
+
+        # 따라서 self.order_list는 MyMainWindow 클래스의 인스턴스 변수 order_list에 접근
+        # order_list는 해당 클래스의 인스턴스가 생성 될 때마다 고유값을 가질수있음
+        
+        self.name = 'kiosk'
+        # name 변수에 kiosk 저장
+
+        # 멀티 클라이언트용 쓰레드
+        receive_thread = threading.Thread(target=self.receive)
+        # receive 메서드를 실행하는 스레드 생성
+        receive_thread.start()
+        # 시작하면 서버에서 메시지를 수신하는 역할 
+
+    def receive(self):
+        # 메세지 수신 역할
+        while True:
+        # 무한 반복
+            message = self.kiosk_client.recv(1024).decode('utf-8')
+            # 앞서 만든 kiosk_client는 서버로부터 데이터를 최대 1024바이트까지의 문자열을 받은 후 디코딩 작업을 진행 
+            if message == 'NAME':
+                # 디코딩한 후 메시지 문자열이 name 이라면
+                self.kiosk_client.send(self.name.encode('utf-8'))
+                # 이때 클라이언트 이름은 name = 'kiosk'를 통해 kiosk로 설정됨 
+                # 즉 서버에서 보낸 메시지가 NAME 이라면 클라이언트는 서버에게 kiosk를 보냄
+            else:
+                self.ui.Service_label.setText(message)
+                # 그 외의 경우, ui의 service_label에 입력된 메시지로 업데이트함
+                           
+    # def write(self):
+    #     # 주문 완료 버튼이 눌렸을 때 데이터를 가져올 수 있도록 변경
+    #     while True:
+    #         c_order = []
+    #         select = 9999
+    #         while True:
+    #             select = int(input('주문 선택(다 고르셨으면 9를 누르세요)'))
+    #             if select == 9:
+    #                 break
+    #             ea = int(input('개수 선택'))
+    #             c_order.append((self.order_list[select-1], ea))
+
+    #         message = str(c_order)
+    #         self.kiosk_client.send(message.encode('utf-8'))
+
+
+    def on_button_clicked(self):
+        # total_button이 클릭 될 때 호출되는 on_button_clicked 메서드
+
+        c_order = []
+        # order list의 index
+        # 주문 정보를 담을 빈 리스트 생성
+        # 마지막에는 제품분류, 이름, 가격, 제조시간, 개수를 다 담게 된다
+
+
+        # 각 제품의 수량 확인 -> ui에 만든 box의 현재 상태 값을 확인 후 각 변수에 저장
+        num_ame = self.ui.ame_spin_box.value()
+        num_latte = self.ui.latte_spin_box.value()
+        num_apple = self.ui.apple_spin_box.value()
+        num_orange = self.ui.orange_spin_box.value()
+        num_sault = self.ui.sault_spin_box.value()
+        num_bread = self.ui.bread_spin_box.value()
+
+        # 각 제품에 대한 주문 정보 추가
+        if num_ame > 0:
+            # 앞서 만든 num_ame가 0보다 크다면
+            index = 1
+            # index 값은 1로 설정
+            ea = num_ame
+            # ea 변수 생성
+            c_order.append((self.order_list[index-1], ea))
+            # 빈리스트에서 0번째 위치에 ea 값을 추가
+            # 따라서 (('coffee', 'americano', '5000', '3000'),(ea)) 이렇게 추가됨
+            pass
+
+        if num_latte > 0:
+            # 처리
+            index = 2
+            ea = num_latte
+            c_order.append((self.order_list[index-1], ea))
+            pass
+
+        if num_orange > 0:
+            # 처리
+            index = 3
+            ea = num_orange
+            c_order.append((self.order_list[index-1], ea))
+            pass
+
+        if num_apple > 0:
+            # 처리
+            index = 4
+            ea = num_apple
+            c_order.append((self.order_list[index-1], ea))
+            pass
+
+        if num_sault > 0:
+            # 처리
+            index = 5
+            ea = num_sault
+            c_order.append((self.order_list[index-1], ea))
+            pass
+
+        if num_bread> 0:
+            # 처리
+            index = 6
+            ea = num_bread
+            c_order.append((self.order_list[index-1], ea))
+            pass
+
+        # 버튼이 눌리고 마지막에 서버에 데이터를 보내주는 코드
+        message = str(c_order)
+        # 앞서 정의한 리스트를 str 타입으로 변경
+        self.kiosk_client.send(message.encode('utf-8'))
+        # kiosk_client에 있는 message를 인코딩하여 서버로 전송 
+
+        # 위의 과정이 끝나면 다음 사람이 주문해야하기에 box 값 초기화
+        self.ui.ame_spin_box.setValue(0)
+        self.ui.latte_spin_box.setValue(0)
+        self.ui.orange_spin_box.setValue(0)
+        self.ui.apple_spin_box.setValue(0)
+        self.ui.sault_spin_box.setValue(0)
+        self.ui.bread_spin_box.setValue(0)
+
+        # ui의 총 가격 문자를 작성하는 박스에 0원이라는 문구를 추가 
+        self.ui.total_price.setText('0 원')
+
+
+
+
+    def update_total_price(self):
+        # 이 메서드는 메뉴 항목, 수량 기반으로 가격 계산 후, ui에 업데이트함
+        total = 0
+        # total 계산을 위한 초기화
+
+        ame_value = self.ui.ame_spin_box.value()
+        # ui의 아메리카노 box 수량 값을 value에 저장
+        ame_price = self.ui.ame_price.text()[:4]
+        # 아메리카노 가격을 text 로 예를 들면 5000원 이렇게 적을때 텍스트의 0 ~ 3번까지 내용을 이용
+        # 따라서 5000 이라는 값이 price에 저장
+        ame_reslut = ame_value * int(ame_price)
+        # 개수 * 가격 = 총 가격
+        total += ame_reslut
+        # total 값에 총 가격 만큼 더해줌
+
+        latte_value = self.ui.latte_spin_box.value()
+        latte_price = self.ui.latte_price.text()[:4]
+        latte_reslut = latte_value * int(latte_price)
+        total += latte_reslut
+
+        sault_value = self.ui.sault_spin_box.value()
+        sault_price = self.ui.sault_price.text()[:4]
+        sault_reslut = sault_value * int(sault_price)
+        total += sault_reslut
+
+        bread_value = self.ui.bread_spin_box.value()
+        bread_price = self.ui.bread_price.text()[:4]
+        bread_reslut = bread_value * int(bread_price)
+        total += bread_reslut
+
+        orange_value = self.ui.orange_spin_box.value()
+        orange_price = self.ui.orange_price.text()[:4]
+        orange_reslut = orange_value * int(orange_price)
+        total += orange_reslut
+
+        apple_value = self.ui.apple_spin_box.value()
+        apple_price = self.ui.apple_price.text()[:4]
+        apple_reslut = apple_value * int(apple_price)
+        total += apple_reslut
+
+        self.ui.total_price.setText(f'{total} 원')
+
+if __name__ == "__main__":
+    # 이 스크립트가 메인으로 실행 된다면
+    app = QApplication(sys.argv)
+    # QApplication 생성 
+    window = MyMainWindow()
+    # MyMainWindow의 인스턴스를 초기화 한 후, 창을 표시
+    window.show()
+    # 윈도우 화면에 표시
+    sys.exit(app.exec_())
+    # QApplication이 닫힐 때 깔끔하게 종료
