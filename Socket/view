@@ -1,0 +1,70 @@
+from PySide6.QtWidgets import QApplication, QMainWindow
+from ui.view import Ui_MainWindow
+import socket, threading
+import time
+import sys
+
+# PySide6 라이브러리에서 QApplication, QMainWindow을 가져온다
+# UI 레이아웃을 정의한 ui.view 모듈에서 Ui_MainWindow를 가져오며
+
+
+class MyMainWindow(QMainWindow):
+# MyMainWindow 클래스에서 QMainWindow를 상속 받음 그리고 클래스 정의
+    def __init__(self): # 매서드
+    # 새로 만든 MyMainWindow 클래스 인스턴스 초기화 용도
+        super().__init__()
+        # 초기화 하는 이유 : 클래스 상속 시 초기화 매서드 (__init__()) 를 명시적으로 호출하는 일반적인 방법
+        # 기존의 QMainWindow의 인스턴스를 초기화한 다음
+        # 내가 만든 인스턴스 (간단히 말하면 아래 코드들)을 사용
+        self.ui = Ui_MainWindow() # 이런것들도 인스턴스
+        # ui_mainwindow의 인스턴스 중 ui 속성을 초기화
+        self.ui.setupUi(self)
+        # 초기화된 ui 인터페이스를 메인 창에 설정
+        self.view_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.view_client에 IPv4, protocal 사용 준비
+        self.view_client.connect(("127.0.0.1", 12345))
+        # self.view_client를 입력한 ip주소, port 번호로 연결 
+        self.name = 'view'
+        # self.name에 view 설정
+        receive_thread = threading.Thread(target=self.receive)
+        # receive_thread 생성
+        receive_thread.start()
+        # receive_thread 메서드 실행
+        # threading.Thread: Thread 클래스의 인스턴스를 생성합니다.
+        # target=self.receive: 실행될 함수를 지정합니다.
+        # start(): 생성한 Thread 객체를 시작합니다. 이 메서드를 호출하면 새로운 쓰레드에서 지정한 함수가 실행됩니다.
+    def receive(self):
+        wait_string = ''
+        complete_string = ''
+
+        while True:
+            message = self.view_client.recv(1024).decode('utf-8')
+            # self.view_client는 서버로 부터 받은 데이터를 디코딩한 후 message에 저장
+            if message == 'NAME':
+                self.view_client.send(self.name.encode('utf-8'))
+                # 수신된 메시지가 NAME이라면 view_client에 있는 self.name을 인코딩하여 서버로 보낸다 
+            else:
+                if "대기" in message:
+                # message 안에 완료, 대기라는 문자열이 있다면
+                    order_num = message[5]
+                    # UI 스레드에서 UI 요소 조작
+                    # message의 주문 번호를 뜻하는 값을 가져온 후 order_num에 저장
+                    wait_string += order_num + ' '
+                    self.ui.textBrowser_1.setText(wait_string)
+                    # ui의 textBrowser_1 에 텍스트를 표시
+
+                else:
+                    order_num = message[5]
+                    
+                    wait_string = wait_string.replace(order_num + ' ', '')
+                    self.ui.textBrowser_1.setText(wait_string)
+                    # 대기증 텍스트 표시
+                    complete_string += order_num + ' '
+                    self.ui.textBrowser_2.setText(complete_string)
+                    # 완료 텍스트 표시
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = MyMainWindow()
+    window.show()
+    sys.exit(app.exec_())
