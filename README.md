@@ -51,6 +51,7 @@ TCP/IP Socket Communication Order
 
 
 서버(Server)  소켓 통신 과정
+
 [1. 소켓을 생성] socket()을 통해 서버 소켓을 생성
 
 [2. 소켓을 바인딩] bind()를 사용해 소켓과 포트 번호를 결합인자로 (서버 소켓, Port Number) 혹은 (IP 주소, Port Number)를 전달 지정된 Port Number을 시스템 내에서 사용할 것을 요구 만약 사용 중인 Port Number이라면 에러 반환
