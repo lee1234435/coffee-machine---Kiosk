@@ -1,5 +1,5 @@
-import socket, threading 
-import time 
+import socket, threading # 소켓 통신 및 양방향 통신을 위한 쓰레딩 모듈 가져오기
+import time # 타임 모듈 가져오기
 
 beverage_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #  beverage_client 소캣 생성 ->  IPV 주소 체계 : socket.AF_INET & TCP 프로토콜 : socket.SOCK_STREAM  
@@ -38,10 +38,12 @@ def receive():
             # 서버에서 보낸 메시지가 NAME이 아니라면
             print(message)
             # 메시지 출력 및 디버깅용 (디버깅 : 소스 코드 오류, 버그를 찾기위해 실행하고 수정하는 과정)
+            # 예로 이런식으로 message가 된다 -> (('beverage','orange juice','4500','3000'),3,1)
             message = eval(message)
             # 문자열 형태 메시지를 eval 함수를 써서 파이썬 객체로 변환 (주고받는 데이터 종류가 문자열 형태의 파이썬 객체일 경우 주로 사용)
             order_info, ea, order_num = message
             # 파이썬 객체로 변환된 문자에서 주문 정보, 수량, 번호 추출
+            print(message)
             make_coffee(order_info, ea, order_num)
             # 추출한 데이터로 함수 호출
             beverage_client.send(str(order_num).encode('utf-8'))
