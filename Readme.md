@@ -12,3 +12,9 @@ Kiosk in Cafe
 
 개발 환경
 - Visual Studio Code
+
+
+사진 출처
+- 작가 macrovector 출처 Freepik
+- 작가 storyset 출처 Freepik
+- 작가 vextox 출처 Freepik
