@@ -14,7 +14,7 @@ The application of this project
 Skill
 - python
 
-IDE ()
+IDE
 - Visual Studio Code
 
 Reference
